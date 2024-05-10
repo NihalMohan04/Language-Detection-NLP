@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Detection</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/styles.css">
+</head>
+<body>
+    <h1>Language Detection</h1>
+
+    <!-- Text input section -->
+    <h2>Text Input</h2>
+    <textarea id="text" rows="4" cols="50"></textarea><br><br>
+    <button onclick="detectLanguageFromText()">Detect Language</button>
+    <p id="result-text"></p>
+
+    <!-- Audio input section -->
+    <h2>Audio Input</h2>
+    <div id="recording-controls">
+        <button id="start-recording" onclick="startRecording()">Start Recording</button>
+        <button id="stop-recording" onclick="stopRecording()" disabled>Stop Recording</button>
+    </div>
+    <audio id="audio" controls style="display: none;"></audio>
+    <button id="submit-audio" onclick="submitAudio()" disabled>Submit Audio</button>
+    <p id="result-audio"></p>
+
+    <!-- Display recorded text -->
+    <h2>Recorded Text</h2>
+    <p id="recorded-text"></p>
+
+    <div id="loading" style="display: none;">
+        <h4>Loading...</h4>
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+
+    <script>
+        let recorder;
+        let audioChunks = [];
+        let recordedText = '';
+
+        async function startRecording() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            recorder = new MediaRecorder(stream);
+            recorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+            recorder.start();
+            document.getElementById('start-recording').disabled = true;
+            document.getElementById('stop-recording').disabled = false;
+        }
+
+        function stopRecording() {
+            recorder.stop();
+            document.getElementById('start-recording').disabled = false;
+            document.getElementById('stop-recording').disabled = true;
+            document.getElementById('submit-audio').disabled = false;
+        }
+
+        async function submitAudio() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'audio.wav'); // Key 'audio' is used here
+
+            document.getElementById('loading').style.display = 'block';
+
+            const response = await fetch('/detect_language', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('result-audio').innerText = "The language is in " + data.language;
+
+            // Display recorded text
+            document.getElementById('recorded-text').innerText = "Recorded Text: " + recordedText;
+        }
+
+        function detectLanguageFromText() {
+            var text = document.getElementById('text').value;
+            fetch('/detect_language', {
+                method: 'POST',
+                body: new URLSearchParams({ text: text }),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result-text').innerText = "The language is in " + data.language;
+            });
+        }
+
+        // Record spoken text
+        window.SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+        const recognition = new window.SpeechRecognition();
+        recognition.interimResults = true;
+
+        recognition.addEventListener('result', e => {
+            const transcript = Array.from(e.results)
+                .map(result => result[0])
+                .map(result => result.transcript)
+                .join('');
+
+            if (e.results[0].isFinal) {
+                recordedText += transcript + ' ';
+            }
+
+            document.getElementById('recorded-text').innerText = "Recorded Text: " + recordedText;
+        });
+
+        recognition.addEventListener('end', () => {
+            if (!recorder.state === 'recording') {
+                document.getElementById('submit-audio').disabled = false;
+            }
+        });
+
+        recognition.addEventListener('error', () => {
+            document.getElementById('recorded-text').innerText = "Error occurred while recording text.";
+        });
+
+        document.getElementById('start-recording').addEventListener('click', () => {
+            recordedText = '';
+            recognition.start();
+        });
+
+        document.getElementById('stop-recording').addEventListener('click', () => {
+            recognition.stop();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+/* styles.css */
+
+/* Overall body styling */
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+/* Headings styling */
+h1, h2 {
+    color: #333;
+}
+
+/* Textarea styling */
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    resize: none;
+}
+
+/* Button styling */
+button {
+    padding: 10px 20px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+}
+
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Loading spinner styling */
+.spinner-border {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: text-bottom;
+}
+
+/* Result text styling */
+#result-text, #result-audio {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* Recorded text styling */
+#recorded-text {
+    margin-top: 20px;
+}
